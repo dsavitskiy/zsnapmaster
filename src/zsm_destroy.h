@@ -27,11 +27,13 @@
 
 namespace zsm {
 
-///
+/**
+ *
+ */
 class Destroy : public Command {
 public:
     virtual Meta get_meta() override;
-    virtual int exec(const Options &opts) override;
+    virtual void exec(const Options &opts) override;
 
 private:
     void find(const std::string &root);

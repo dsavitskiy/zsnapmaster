@@ -29,21 +29,35 @@ Meta Create::get_meta()
     return {
         "create snapshot(s) of the given dataset(s)",
         {
-            { "tag",       't', "tag",          Option::OneArg, "snapshot tag" },
-            { "recursive", 'r', "recursive",    Option::Flag,   "create snapshots recursively" },
-            { "dry_run",   'n', "dry-run",      Option::Flag,   "skip snapshot creation" },
-            { "verbose",   'V', "verbose",      Option::Flag,   "verbose output" },
+            {
+                "tag",
+                't', "tag", Option::OneArg,
+                "snapshot tag"
+            },
+            {
+                "recursive",
+                'r', "recursive", Option::Flag,
+                "create snapshots recursively"
+            },
+            {
+                "dry_run",
+                'n', "dry-run", Option::Flag,
+                "skip snapshot creation"
+            },
+            {
+                "verbose",
+                'V', "verbose", Option::Flag,
+                "verbose output"
+            }
         }
     };
 }
 
-
-int Create::exec(const Options &opts)
+void Create::exec(const Options &opts)
 {
     m_tag = opts.get_arg("tag");
     if (m_tag.empty()) {
-        std::cerr << "Schedule tag must be specified" << std::endl;
-        return 1;
+        throw Exception("Schedule tag must be specified");
     }
 
     m_recursive = opts.get("recursive");
@@ -56,8 +70,7 @@ int Create::exec(const Options &opts)
     }
 
     if (m_datasets.empty()) {
-        std::cerr << "At least one dataset must be specified" << std::endl;
-        return 1;
+        throw Exception("At least one dataset must be specified");
     }
 
     //
@@ -81,10 +94,7 @@ int Create::exec(const Options &opts)
     if (m_verbose) {
         std::cout << std::endl;
     }
-
-    return 0;
 }
-
 
 void Create::find(const std::string &root)
 {
@@ -92,7 +102,8 @@ void Create::find(const std::string &root)
         ZFS_TYPE_FILESYSTEM | ZFS_TYPE_VOLUME);
 
     if (!hzfs) {
-        std::cerr << root << ": " << libzfs_error_description(m_hlib) << std::endl;
+        std::cerr << root << ": " << libzfs_error_description(m_hlib)
+            << std::endl;
         return;
     }
 
@@ -105,39 +116,49 @@ void Create::find(const std::string &root)
     zfs_close(hzfs);
 }
 
-
 void Create::snap(const std::string &name)
 {
     std::string snap_name = name + "@" + m_snap_suffix + "_" + m_tag;
 
-    if (m_verbose)
+    if (m_verbose) {
         std::cout << "    "
             << (m_dry_run ? "would create : " : "creating     : ")
             << snap_name << "\n";
+    }
 
     if (m_dry_run)
         return;
 
+    // Create the snapshot.
     if (zfs_snapshot(m_hlib, snap_name.c_str(), B_FALSE, NULL) != 0) {
-        std::cerr << snap_name << ": " << libzfs_error_description(m_hlib) << std::endl;
+        std::cerr << snap_name << ": "
+            << libzfs_error_description(m_hlib)
+            << std::endl;
         return;
     }
 
-    zfs_handle_t *hsnap = zfs_open(m_hlib, snap_name.c_str(), ZFS_TYPE_SNAPSHOT);
+    // Open the newly created snapshot.
+    zfs_handle_t *hsnap = zfs_open(m_hlib, snap_name.c_str(),
+        ZFS_TYPE_SNAPSHOT);
     if (!hsnap) {
-        std::cerr << snap_name << ": " << libzfs_error_description(m_hlib) << std::endl;
+        std::cerr << snap_name << ": "
+            << libzfs_error_description(m_hlib)
+            << std::endl;
         return;
     }
 
+    // Set user-defined properties indicating that the snapshot
+    // is managed by ZSM.
     if (zfs_prop_set(hsnap, ZSM_TIMESTAMP_PROP, m_timestamp.c_str()) != 0 ||
         zfs_prop_set(hsnap, ZSM_TAG_PROP, m_tag.c_str()) != 0) {
-        std::cerr << snap_name << ": " << libzfs_error_description(m_hlib) << std::endl;
+        std::cerr << snap_name << ": "
+            << libzfs_error_description(m_hlib)
+            << std::endl;
         return;
     }
 
     zfs_close(hsnap);
 }
-
 
 int Create::iter_dataset(zfs_handle_t *hzfs, void *ptr)
 {

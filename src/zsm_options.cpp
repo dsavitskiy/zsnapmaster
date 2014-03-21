@@ -31,7 +31,6 @@ Options::Options(int argc, char *argv[])
     }
 }
 
-
 bool Options::parse(const Meta &meta)
 {
     size_t n = m_raw_args.size();
@@ -106,18 +105,6 @@ bool Options::parse(const Meta &meta)
         if (m_values.find(i.name) == m_values.end())
             m_values[i.name] = Value();
     }
-
-//    //
-//    for (auto i : values) {
-//        std::cout << i.first << " => " << i.second.value;
-//        if (i.second.arg.size())
-//            std::cout << " (" << i.second.arg << ")";
-//        std::cout << "\n";
-//    }
-//
-//    for (auto i : operands) {
-//        std::cout << "@ " << i << "\n";
-//    }
 
     return true;
 }

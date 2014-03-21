@@ -24,7 +24,8 @@
 
 namespace zsm {
 
-bool get_zfs_property(std::string &dst, zfs_handle_t *hzfs, const std::string &name)
+bool get_zfs_property(std::string &dst, zfs_handle_t *hzfs,
+    const std::string &name)
 {
     dst.clear();
 
@@ -60,7 +61,6 @@ bool get_zfs_property(std::string &dst, zfs_handle_t *hzfs, const std::string &n
     }
 }
 
-
 std::string format_time(std::time_t t, const std::string &fmt, bool local)
 {
     std::tm *tm = local ? std::localtime(&t) : std::gmtime(&t);
@@ -69,22 +69,21 @@ std::string format_time(std::time_t t, const std::string &fmt, bool local)
     return buff;
 }
 
-
-std::string format_time(const system_clock::time_point &t, const std::string &fmt, bool local)
+std::string format_time(const system_clock::time_point &t,
+    const std::string &fmt, bool local)
 {
     std::time_t tt = system_clock::to_time_t(t);
     return format_time(tt, fmt, local);
 }
 
-
-std::string format_time(const std::string &time_str, const std::string &fmt, bool local)
+std::string format_time(const std::string &time_str,
+    const std::string &fmt, bool local)
 {
     std::time_t t;
     std::istringstream iss(time_str);
     iss >> t;
     return format_time(t, fmt, local);
 }
-
 
 std::string pad_right(const std::string &s, size_t n, char fill)
 {
@@ -94,7 +93,6 @@ std::string pad_right(const std::string &s, size_t n, char fill)
     else
         return s;
 }
-
 
 bool parse_age(system_clock::duration &dst, const std::string &src)
 {
@@ -131,7 +129,6 @@ bool parse_age(system_clock::duration &dst, const std::string &src)
 
     return true;
 }
-
 
 std::string nice_bytes(uint64_t sz)
 {

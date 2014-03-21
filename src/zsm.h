@@ -45,7 +45,8 @@ namespace zsm {
 #define ZSM_TAG_PROP            "zsm:tag"
 
 //
-bool get_zfs_property(std::string &dst, zfs_handle_t *hzfs, const std::string &name);
+bool get_zfs_property(std::string &dst, zfs_handle_t *hzfs,
+    const std::string &name);
 
 //
 template<class T>
@@ -65,10 +66,12 @@ T get_zfs_property(zfs_handle_t *hzfs, const std::string &name)
 std::string format_time(std::time_t t, const std::string &fmt, bool local);
 
 //
-std::string format_time(const system_clock::time_point &t, const std::string &fmt, bool local);
+std::string format_time(const system_clock::time_point &t,
+    const std::string &fmt, bool local);
 
 //
-std::string format_time(const std::string &time_str, const std::string &fmt, bool local);
+std::string format_time(const std::string &time_str,
+    const std::string &fmt, bool local);
 
 //
 std::string pad_right(const std::string &s, size_t n, char fill = ' ');
@@ -78,6 +81,25 @@ bool parse_age(system_clock::duration &dst, const std::string &src);
 
 //
 std::string nice_bytes(uint64_t sz);
+
+
+/**
+ * zsnapmaster exception class.
+ */
+class Exception : public std::exception {
+public:
+    explicit Exception(const std::string &msg) : m_msg(msg)
+    {
+    }
+
+    virtual const char *what() const throw() override
+    {
+        return m_msg.c_str();
+    }
+
+protected:
+    std::string m_msg;
+};
 
 } // namespace zsm
 

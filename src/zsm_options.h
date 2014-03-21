@@ -27,7 +27,9 @@
 
 namespace zsm {
 
-///
+/**
+ * TODO
+ */
 struct Option {
     enum Type {
         Flag,
@@ -42,45 +44,57 @@ struct Option {
 };
 
 
-///
+/**
+ * TODO
+ */
 struct Meta {
     const char* help;
     std::list<Option> opts;
 };
 
 
-///
+/**
+ * TODO
+ */
 class Options {
 public:
     Options(int argc, char *argv[]);
 
     bool parse(const Meta &meta);
 
-    bool get(const std::string &name) const {
+    bool get(const std::string &name) const
+    {
         return find(name).count > 0;
     }
 
-    const std::string &get_arg(const std::string &name) const {
+    const std::string &get_arg(const std::string &name) const
+    {
         return find(name).arg;
     }
 
-    size_t get_count(const std::string &name) const {
+    size_t get_count(const std::string &name) const
+    {
         return find(name).count;
     }
 
-    const std::vector<std::string> &ops() const {
+    const std::vector<std::string> &ops() const
+            {
         return m_operands;
     }
 
-    std::string op(size_t n = 0) const {
-        if (n >= m_operands.size())
+    std::string op(size_t n = 0) const
+    {
+        if (n >= m_operands.size()) {
             return std::string();
+        }
         return m_operands[n];
     }
 
 private:
     struct Value {
-        Value() : count(0) {}
+        Value() : count(0)
+        {
+        }
 
         size_t count;
         std::string arg;

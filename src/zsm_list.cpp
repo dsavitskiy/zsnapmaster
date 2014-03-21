@@ -29,39 +29,67 @@ Meta List::get_meta()
     return {
         "list datasets (lists ZSM-managed snapshots by default)",
         {
-            { "recursive", 'r', "recursive",    Option::Flag, "recursive" },
-            { "show_all",  'a', "show-all",     Option::Flag, "show all snapshots (by default, only snapshots tagged by zsnapmaster are listed)" },
-            { "show_fs",   'f', "filesystems",  Option::Flag, "show filesystems (by default, only snapshots are listed)" },
-            { "show_vol",  'v', "volumes",      Option::Flag, "show volumes (by default, only snapshots are listed)" },
-            { "show_snap", 's', "snapshots",    Option::Flag, "show snapshots" },
-            { "verbose",   'V', "verbose",      Option::Flag, "verbose output" }
+            {
+                "recursive",
+                'r', "recursive", Option::Flag,
+                "recursive"
+            },
+            {
+                "show_all",
+                'a', "show-all", Option::Flag,
+                "show all snapshots (by default, only snapshots tagged "
+                "by zsnapmaster are listed)"
+            },
+            {
+                "show_fs",
+                'f', "filesystems", Option::Flag,
+                "show filesystems (by default, only snapshots are listed)"
+            },
+            {
+                "show_vol",
+                'v', "volumes", Option::Flag,
+                "show volumes (by default, only snapshots are listed)"
+            },
+            {
+                "show_snap",
+                's', "snapshots", Option::Flag,
+                "show snapshots"
+            },
+            {
+                "verbose",
+                'V', "verbose", Option::Flag,
+                "verbose output"
+            }
         }
     };
 }
 
-
-int List::exec(const Options &opts)
+void List::exec(const Options &opts)
 {
     m_recursive = opts.get("recursive");
     m_show_all = opts.get("show_all");
+    m_verbose = opts.get("verbose");
 
     m_filter_flags = 0;
 
-    if (opts.get("show_fs"))
+    if (opts.get("show_fs")) {
         m_filter_flags |= ZFS_TYPE_FILESYSTEM;
+    }
 
-    if (opts.get("show_vol"))
+    if (opts.get("show_vol")) {
         m_filter_flags |= ZFS_TYPE_VOLUME;
+    }
 
-    if (opts.get("show_snap"))
+    if (opts.get("show_snap")) {
         m_filter_flags |= ZFS_TYPE_SNAPSHOT;
+    }
 
-    if (!m_filter_flags)
+    if (!m_filter_flags) {
         m_filter_flags = ZFS_TYPE_SNAPSHOT;
+    }
 
+    // TODO: support listing of several datasets specifiede in the command line.
     m_name = opts.op();
-
-    m_verbose = opts.get("verbose");
 
     if (m_verbose) {
         system_clock::time_point now = system_clock::now();
@@ -69,12 +97,20 @@ int List::exec(const Options &opts)
             << " listing datasets\n";
     }
 
+    // If a root dataset is specified in the command line, iterate its children.
+    // Otherwise iterate all pools.
     if (m_name.empty()) {
         zpool_iter(m_hlib, List::iter_pool, this);
     } else {
         find(m_name);
     }
 
+    // Fill dataset property map.
+    for (auto &i : m_datasets) {
+        make_props(i);
+    }
+
+    // Sort found datasets so the ZSM managed snapshots are listed first.
     m_datasets.sort([] (const Dataset &a, const Dataset &b) {
         if (a.name < b.name)
             return true;
@@ -95,10 +131,8 @@ int List::exec(const Options &opts)
         return false;
     });
 
-    for (auto &i : m_datasets) {
-        make_props(i);
-    }
-
+    // Initialize column list.
+    // TODO: add command line option to specify which properties to print.
     m_cols.push_back(Column("type", "TYPE"));
     m_cols.push_back(Column("name", "NAME"));
     m_cols.push_back(Column("snap_name", "SNAPSHOT NAME"));
@@ -108,10 +142,11 @@ int List::exec(const Options &opts)
     m_cols.push_back(Column("avail", "AVAIL"));
     m_cols.push_back(Column("refer", "REFER"));
 
-    // Calculate column width.
+    // Calculate maximum width of each column.
     for (auto &i : m_datasets) {
-        for (auto &j : m_cols)
+        for (auto &j : m_cols) {
             j.width = std::max(j.width, i.props[j.key].size());
+        }
 
         auto j = m_cols.begin();
         j->width = std::max(j->width, i.props[j->key].size() + i.indent.size());
@@ -121,8 +156,9 @@ int List::exec(const Options &opts)
         i.width += 2;
 
     // Print table header.
-    for (auto i : m_cols)
+    for (auto i : m_cols) {
         std::cout << pad_right(i.txt, i.width);
+    }
     std::cout << "\n";
 
     // Print dataset properties.
@@ -130,8 +166,9 @@ int List::exec(const Options &opts)
         std::cout << i.indent;
         auto j = m_cols.begin();
         std::cout << pad_right(i.props[j->key], j->width - i.indent.size());
-        for (++j; j != m_cols.end(); ++j)
+        for (++j; j != m_cols.end(); ++j) {
             std::cout << pad_right(i.props[j->key], j->width);
+        }
         std::cout << "\n";
     }
 
@@ -140,10 +177,7 @@ int List::exec(const Options &opts)
     if (m_verbose) {
         std::cout << std::endl;
     }
-
-    return 0;
 }
-
 
 void List::make_props(Dataset &d)
 {
@@ -155,6 +189,8 @@ void List::make_props(Dataset &d)
 
         if (d.is_zsm)
             d.props["tag"] = d.tag;
+        else
+            d.props["tag"] = "-";
 
         d.props["used"] = "-";
         d.props["avail"] = "-";
@@ -175,12 +211,12 @@ void List::make_props(Dataset &d)
     }
 
     if (d.timestamp) {
-        d.props["timestamp"] = format_time(d.timestamp, "%Y.%m.%d  %H:%M:%S", true);
+        d.props["timestamp"] = format_time(d.timestamp, "%Y.%m.%d  %H:%M:%S",
+            true);
     } else {
         d.props["timestamp"] = "-";
     }
 }
-
 
 void List::find(const std::string &root)
 {
@@ -195,7 +231,6 @@ void List::find(const std::string &root)
             << std::endl;
     }
 }
-
 
 int List::iter_pool(zpool_handle_t *hpool, void *ptr)
 {
@@ -218,20 +253,21 @@ int List::iter_pool(zpool_handle_t *hpool, void *ptr)
     return 0;
 }
 
-
 int List::iter_dataset(zfs_handle_t *hzfs, void *ptr)
 {
     ((List*)ptr)->iter_dataset(hzfs);
     return 0;
 }
 
-
 void List::iter_dataset(zfs_handle_t *hzfs)
 {
     zfs_type_t type = zfs_get_type(hzfs);
 
     if (m_filter_flags & type) {
-        zfs_handle_t *htmp = zfs_open(m_hlib, zfs_get_name(hzfs), ZFS_TYPE_DATASET);
+        // Need to re-open dataset, cause the handle passed to this callback
+        // seems to be unable to return user-defined properties.
+        zfs_handle_t *htmp = zfs_open(m_hlib, zfs_get_name(hzfs),
+            ZFS_TYPE_DATASET);
         add_dataset(htmp);
         zfs_close(htmp);
     }
@@ -242,7 +278,6 @@ void List::iter_dataset(zfs_handle_t *hzfs)
         zfs_iter_filesystems(hzfs, iter_dataset, this);
     }
 }
-
 
 void List::add_dataset(zfs_handle_t *hzfs)
 {

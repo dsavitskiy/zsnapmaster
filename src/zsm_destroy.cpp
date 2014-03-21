@@ -29,35 +29,56 @@ Meta Destroy::get_meta()
     return {
         "destroy snapshot(s) previously created by zsnapmaster",
         {
-            { "tag",       't', "tag",          Option::OneArg, "snapshot tag" },
-            { "age",       'a', "age",          Option::OneArg, "destroy snapshots older than the given age" },
-            { "recursive", 'r', "recursive",    Option::Flag,   "recursive" },
-            { "defer",     'd', "defer",        Option::Flag,   "defer snapshot deletion" },
-            { "dry_run",   'n', "dry-run",      Option::Flag,   "dry run" },
-            { "verbose",   'V', "verbose",      Option::Flag,   "verbose output" },
+            {
+                "tag",
+                't', "tag", Option::OneArg,
+                "snapshot tag"
+            },
+            {
+                "age",
+                'a', "age", Option::OneArg,
+                "destroy snapshots older than the given age"
+            },
+            {
+                "recursive",
+                'r', "recursive", Option::Flag,
+                "recursive"
+            },
+            {
+                "defer",
+                'd', "defer", Option::Flag,
+                "defer snapshot deletion"
+            },
+            {
+                "dry_run",
+                'n', "dry-run", Option::Flag,
+                "dry run"
+            },
+            {
+                "verbose",
+                'V', "verbose", Option::Flag,
+                "verbose output"
+            }
         }
     };
 }
 
 
-int Destroy::exec(const Options &opts)
+void Destroy::exec(const Options &opts)
 {
     m_tag = opts.get_arg("tag");
     if (m_tag.empty()) {
-        std::cerr << "Tag must be specified" << std::endl;
-        return 1;
+        throw Exception("Tag must be specified");
     }
 
     std::string age_str = opts.get_arg("age");
     if (age_str.empty()) {
-        std::cerr << "Age must be specified" << std::endl;
-        return 1;
+        throw Exception("Age must be specified");
     }
 
     system_clock::duration age_dur;
     if (!parse_age(age_dur, age_str)) {
-        std::cerr << "Invalid age format: " << age_str << std::endl;
-        return 1;
+        throw Exception("Invalid age format: " + age_str);
     }
     m_age = duration_cast<seconds>(age_dur).count();
 
@@ -88,10 +109,7 @@ int Destroy::exec(const Options &opts)
     if (m_verbose) {
         std::cout << std::endl;
     }
-
-    return 0;
 }
-
 
 void Destroy::find(const std::string &root)
 {
@@ -99,7 +117,8 @@ void Destroy::find(const std::string &root)
         ZFS_TYPE_FILESYSTEM | ZFS_TYPE_VOLUME);
 
     if (!hzfs) {
-        std::cerr << root << ": " << libzfs_error_description(m_hlib) << std::endl;
+        std::cerr << root << ": " << libzfs_error_description(m_hlib)
+            << std::endl;
         return;
     }
 
@@ -112,12 +131,12 @@ void Destroy::find(const std::string &root)
     zfs_close(hzfs);
 }
 
-
 void Destroy::destroy(const std::string &name)
 {
     if (m_verbose)
         std::cout << "    "
-            << (m_dry_run ? "would destroy : " : "destroying    : ") << name << "\n";
+            << (m_dry_run ? "would destroy : " : "destroying    : ") << name
+            << "\n";
 
     if (m_dry_run)
         return;
@@ -125,7 +144,8 @@ void Destroy::destroy(const std::string &name)
     zfs_handle_t *hzfs = zfs_open(m_hlib, name.c_str(), ZFS_TYPE_SNAPSHOT);
 
     if (!hzfs) {
-        std::cerr << name << ": " << libzfs_error_description(m_hlib) << std::endl;
+        std::cerr << name << ": " << libzfs_error_description(m_hlib)
+            << std::endl;
         return;
     }
 
@@ -133,7 +153,6 @@ void Destroy::destroy(const std::string &name)
 
     zfs_close(hzfs);
 }
-
 
 int Destroy::iter_dataset(zfs_handle_t *hzfs, void *ptr)
 {
@@ -153,7 +172,6 @@ int Destroy::iter_dataset(zfs_handle_t *hzfs, void *ptr)
     return 0;
 }
 
-
 bool Destroy::check_tag(zfs_handle_t *hzfs) const
 {
     auto tag_prop = get_zfs_property<std::string>(hzfs, ZSM_TAG_PROP);
@@ -170,7 +188,6 @@ bool Destroy::check_tag(zfs_handle_t *hzfs) const
 
     return false;
 }
-
 
 bool Destroy::check_age(zfs_handle_t *hzfs) const
 {

@@ -27,7 +27,9 @@
 
 namespace zsm {
 
-///
+/**
+ *
+ */
 class Command {
 public:
     Command() : m_hlib(nullptr)
@@ -40,7 +42,7 @@ public:
 
     virtual Meta get_meta() = 0;
 
-    virtual int exec(const Options &opts) = 0;
+    virtual void exec(const Options &opts) = 0;
 
     void set_lib(libzfs_handle_t *hlib)
     {

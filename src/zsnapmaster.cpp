@@ -37,7 +37,8 @@ static CommandInfo commands[] = {
     { "list",      []() -> Command* { return new List; } }
 };
 
-static void print_command_help(const std::string &name, std::shared_ptr<Command> cmd)
+static void print_command_help(const std::string &name,
+    std::shared_ptr<Command> cmd)
 {
     Meta meta = cmd->get_meta();
 
@@ -55,7 +56,6 @@ static void print_command_help(const std::string &name, std::shared_ptr<Command>
     }
 }
 
-
 static void print_help()
 {
     std::cout << "\n"
@@ -64,10 +64,10 @@ static void print_help()
         "Usage:\n";
 
     for (size_t i = 0; i < sizeof (commands) / sizeof (commands[0]); ++i) {
-        print_command_help(commands[i].name, std::shared_ptr<Command>(commands[i].func()));
+        print_command_help(commands[i].name,
+            std::shared_ptr<Command>(commands[i].func()));
     }
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -107,7 +107,13 @@ int main(int argc, char *argv[])
     }
 
     pcmd->set_lib(hlib);
-    int ret = pcmd->exec(opts);
+    int ret = 0;
+    try {
+        pcmd->exec(opts);
+    } catch (const std::exception &err) {
+        std::cerr << err.what() << std::endl;
+        ret = 1;
+    }
     libzfs_fini(hlib);
 
     return ret;

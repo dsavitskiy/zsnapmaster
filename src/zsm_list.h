@@ -27,11 +27,13 @@
 
 namespace zsm {
 
-///
+/**
+ * Implements dataset listing.
+ */
 class List : public Command {
 public:
     virtual Meta get_meta() override;
-    virtual int exec(const Options &opts) override;
+    virtual void exec(const Options &opts) override;
 
 private:
     struct Dataset {
@@ -53,7 +55,10 @@ private:
     };
 
     struct Column {
-        Column(const std::string &key, const std::string &txt) : key(key), txt(txt), width(txt.size()) {}
+        Column(const std::string &key, const std::string &txt) : key(key),
+            txt(txt), width(txt.size())
+        {
+        }
 
         std::string key;
         std::string txt;
