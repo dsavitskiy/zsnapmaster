@@ -135,6 +135,8 @@ int List::exec(const Options &opts)
         std::cout << "\n";
     }
 
+    std::cout << "\nTotal: " << m_datasets.size() << std::endl;
+
     if (m_verbose) {
         std::cout << std::endl;
     }
