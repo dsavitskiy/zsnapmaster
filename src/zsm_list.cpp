@@ -35,6 +35,11 @@ Meta List::get_meta()
                 "recursive"
             },
             {
+                "tag",
+                't', "tag", Option::OneArg,
+                "show only this tag"
+            },
+            {
                 "show_all",
                 'a', "show-all", Option::Flag,
                 "show all snapshots (by default, only snapshots tagged "
@@ -68,6 +73,7 @@ void List::exec(const Options &opts)
 {
     m_recursive = opts.get("recursive");
     m_show_all = opts.get("show_all");
+    m_tag = opts.get_arg("tag");
     m_verbose = opts.get("verbose");
 
     m_filter_flags = 0;
@@ -291,6 +297,10 @@ void List::add_dataset(zfs_handle_t *hzfs)
     Dataset ds(hzfs);
 
     if (ds.type == ZFS_TYPE_SNAPSHOT && !ds.is_zsm && !m_show_all) {
+        return;
+    }
+
+    if (!m_tag.empty() && ds.is_zsm && ds.tag != m_tag) {
         return;
     }
 

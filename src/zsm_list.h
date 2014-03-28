@@ -62,6 +62,7 @@ private:
     bool m_show_all;
     int m_filter_flags;
     bool m_verbose;
+    std::string m_tag;
 
     std::list<Dataset> m_datasets;
     std::list<Column> m_cols;
