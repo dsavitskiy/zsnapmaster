@@ -149,7 +149,7 @@ void List::exec(const Options &opts)
         }
 
         auto j = m_cols.begin();
-        j->width = std::max(j->width, i.props[j->key].size() + i.indent.size());
+        j->width = std::max(j->width, i.props[j->key].size() + i.depth * 4);
     }
 
     for (auto &i : m_cols)
@@ -163,9 +163,9 @@ void List::exec(const Options &opts)
 
     // Print dataset properties.
     for (auto &i : m_datasets) {
-        std::cout << i.indent;
+        std::cout << std::string(i.depth * 4, ' ');
         auto j = m_cols.begin();
-        std::cout << pad_right(i.props[j->key], j->width - i.indent.size());
+        std::cout << pad_right(i.props[j->key], j->width - i.depth * 4);
         for (++j; j != m_cols.end(); ++j) {
             std::cout << pad_right(i.props[j->key], j->width);
         }
@@ -185,7 +185,7 @@ void List::make_props(Dataset &d)
         size_t n = d.name.find('@');
         d.props["snap_name"] = d.name.substr(n);
         d.props["name"] = d.name.substr(0, n);
-        d.indent = "    ";
+        d.depth = 1;
 
         if (d.is_zsm)
             d.props["tag"] = d.tag;
@@ -281,25 +281,13 @@ void List::iter_dataset(zfs_handle_t *hzfs)
 
 void List::add_dataset(zfs_handle_t *hzfs)
 {
-    Dataset dataset;
+    Dataset ds(hzfs);
 
-    dataset.tag = get_zfs_property<std::string>(hzfs, ZSM_TAG_PROP);
-    if (dataset.tag.empty()) {
-        if (zfs_get_type(hzfs) == ZFS_TYPE_SNAPSHOT && !m_show_all)
-            return;
-    } else {
-        dataset.is_zsm = true;
+    if (ds.type == ZFS_TYPE_SNAPSHOT && !ds.is_zsm && !m_show_all) {
+        return;
     }
 
-    dataset.timestamp = get_zfs_property<uint64_t>(hzfs, ZSM_TIMESTAMP_PROP);
-    dataset.name = zfs_get_name(hzfs);
-    dataset.type = zfs_get_type(hzfs);
-
-    dataset.used = get_zfs_property<uint64_t>(hzfs, "used");
-    dataset.avail = get_zfs_property<uint64_t>(hzfs, "avail");
-    dataset.refer = get_zfs_property<uint64_t>(hzfs, "refer");
-
-    m_datasets.push_back(dataset);
+    m_datasets.push_back(ds);
 }
 
 } // namespace zsm

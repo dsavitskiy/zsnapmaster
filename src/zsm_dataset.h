@@ -20,41 +20,36 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef ZSM_DESTROY_H
-#define ZSM_DESTROY_H
+#ifndef ZSM_DATASET_H
+#define ZSM_DATASET_H
 
-#include "zsm_command.h"
-#include "zsm_dataset.h"
+#include "zsm.h"
 
 namespace zsm {
 
 /**
- *
+ * Dataset structure.
  */
-class Destroy : public Command {
-public:
-    virtual Meta get_meta() override;
-    virtual void exec(const Options &opts) override;
+struct Dataset {
+    Dataset() : type(ZFS_TYPE_FILESYSTEM), timestamp(0),
+        is_zsm(false), used(0), avail(0), refer(0), depth(0)
+    {
+    }
 
-private:
-    void find(const std::string &root);
-    void destroy(const std::string &name);
-    static int iter_dataset(zfs_handle_t *hzfs, void *self);
-    bool check_tag(const Dataset &dataset) const;
-    bool check_age(const Dataset &dataset) const;
+    explicit Dataset(zfs_handle_t *hzfs);
 
-private:
-    std::string m_tag;
-    int64_t m_age;
-    bool m_recursive;
-    bool m_defer;
-    bool m_dry_run;
-    size_t m_verbose;
-
-    std::list<Dataset> m_datasets;
-    int64_t m_now;
+    std::string name;
+    zfs_type_t type;
+    std::string tag;
+    int64_t timestamp;
+    uint64_t used;
+    uint64_t avail;
+    uint64_t refer;
+    bool is_zsm;
+    size_t depth;
+    std::map<std::string, std::string> props;
 };
 
 } // namespace zsm
 
-#endif // ZSM_DESTROY_H
+#endif // ZSM_DATASET_H

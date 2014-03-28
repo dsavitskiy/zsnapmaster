@@ -24,6 +24,7 @@
 #define ZSM_LIST_H
 
 #include "zsm_command.h"
+#include "zsm_dataset.h"
 
 namespace zsm {
 
@@ -36,24 +37,6 @@ public:
     virtual void exec(const Options &opts) override;
 
 private:
-    struct Dataset {
-        Dataset() : type(ZFS_TYPE_FILESYSTEM), timestamp(0),
-            is_zsm(false), used(0), avail(0), refer(0)
-        {
-        }
-
-        std::string indent;
-        std::string name;
-        zfs_type_t type;
-        std::string tag;
-        int64_t timestamp;
-        uint64_t used;
-        uint64_t avail;
-        uint64_t refer;
-        bool is_zsm;
-        std::map<std::string, std::string> props;
-    };
-
     struct Column {
         Column(const std::string &key, const std::string &txt) : key(key),
             txt(txt), width(txt.size())

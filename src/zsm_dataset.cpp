@@ -20,41 +20,24 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef ZSM_DESTROY_H
-#define ZSM_DESTROY_H
-
-#include "zsm_command.h"
 #include "zsm_dataset.h"
 
 namespace zsm {
 
-/**
- *
- */
-class Destroy : public Command {
-public:
-    virtual Meta get_meta() override;
-    virtual void exec(const Options &opts) override;
+Dataset::Dataset(zfs_handle_t *hzfs) : Dataset()
+{
+    tag = get_zfs_property<std::string>(hzfs, ZSM_TAG_PROP);
+    if (!tag.empty()) {
+        is_zsm = true;
+    }
 
-private:
-    void find(const std::string &root);
-    void destroy(const std::string &name);
-    static int iter_dataset(zfs_handle_t *hzfs, void *self);
-    bool check_tag(const Dataset &dataset) const;
-    bool check_age(const Dataset &dataset) const;
+    timestamp = get_zfs_property<uint64_t>(hzfs, ZSM_TIMESTAMP_PROP);
+    name = zfs_get_name(hzfs);
+    type = zfs_get_type(hzfs);
 
-private:
-    std::string m_tag;
-    int64_t m_age;
-    bool m_recursive;
-    bool m_defer;
-    bool m_dry_run;
-    size_t m_verbose;
-
-    std::list<Dataset> m_datasets;
-    int64_t m_now;
-};
+    used = get_zfs_property<uint64_t>(hzfs, "used");
+    avail = get_zfs_property<uint64_t>(hzfs, "avail");
+    refer = get_zfs_property<uint64_t>(hzfs, "refer");
+}
 
 } // namespace zsm
-
-#endif // ZSM_DESTROY_H

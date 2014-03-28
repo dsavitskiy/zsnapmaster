@@ -98,12 +98,25 @@ void Destroy::exec(const Options &opts)
     }
 
     m_datasets.clear();
-    for (auto i : opts.ops()) {
+    for (auto &i : opts.ops()) {
         find(i);
     }
 
-    for (auto i : m_datasets) {
-        destroy(i);
+    // Sort found datasets by timestamp.
+    m_datasets.sort([] (const Dataset &a, const Dataset &b) {
+        if (a.name < b.name)
+            return true;
+        if (a.name > b.name)
+            return false;
+
+        if (a.timestamp < b.timestamp)
+            return true;
+
+        return false;
+    });
+
+    for (auto &i : m_datasets) {
+        destroy(i.name);
     }
 
     if (m_verbose) {
@@ -159,8 +172,9 @@ int Destroy::iter_dataset(zfs_handle_t *hzfs, void *ptr)
     Destroy *self = (Destroy*)ptr;
 
     if (zfs_get_type(hzfs) == ZFS_TYPE_SNAPSHOT) {
-        if (self->check_tag(hzfs) && self->check_age(hzfs)) {
-            self->m_datasets.push_back(zfs_get_name(hzfs));
+        Dataset ds(hzfs);
+        if (self->check_tag(ds) && self->check_age(ds)) {
+            self->m_datasets.push_back(ds);
         }
     }
 
@@ -172,33 +186,31 @@ int Destroy::iter_dataset(zfs_handle_t *hzfs, void *ptr)
     return 0;
 }
 
-bool Destroy::check_tag(zfs_handle_t *hzfs) const
+bool Destroy::check_tag(const Dataset &dataset) const
 {
-    auto tag_prop = get_zfs_property<std::string>(hzfs, ZSM_TAG_PROP);
-    if (tag_prop == m_tag)
+    if (dataset.tag == m_tag)
         return true;
 
     if (m_verbose >= 2) {
-        std::cout << "    skipping      : " << zfs_get_name(hzfs) << ", ";
-        if (tag_prop.empty())
+        std::cout << "    skipping      : " << dataset.name << ", ";
+        if (dataset.tag.empty())
             std::cout << "empty tag\n";
         else
-            std::cout << "different tag: " << tag_prop << "\n";
+            std::cout << "different tag: " << dataset.tag << "\n";
     }
 
     return false;
 }
 
-bool Destroy::check_age(zfs_handle_t *hzfs) const
+bool Destroy::check_age(const Dataset &dataset) const
 {
-    int64_t timestamp = get_zfs_property<int64_t>(hzfs, ZSM_TIMESTAMP_PROP);
-    int64_t delta = m_now - timestamp;
+    int64_t delta = m_now - dataset.timestamp;
 
     if (delta > m_age)
         return true;
 
     if (m_verbose >= 2) {
-        std::cout << "    skipping      : " << zfs_get_name(hzfs) << ", "
+        std::cout << "    skipping      : " << dataset.name << ", "
                   << "not old enough\n";
     }
 
