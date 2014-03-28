@@ -43,6 +43,7 @@ namespace zsm {
 
 #define ZSM_TIMESTAMP_PROP      "zsm:timestamp"
 #define ZSM_TAG_PROP            "zsm:tag"
+#define ZSM_SKIP_PROP           "zsm:skip_snap"
 
 //
 bool get_zfs_property(std::string &dst, zfs_handle_t *hzfs,

@@ -32,7 +32,8 @@ namespace zsm {
  */
 struct Dataset {
     Dataset() : type(ZFS_TYPE_FILESYSTEM), timestamp(0),
-        is_zsm(false), used(0), avail(0), refer(0), depth(0)
+        is_zsm(false), skip_snap(false),
+        used(0), avail(0), refer(0), depth(0)
     {
     }
 
@@ -46,6 +47,7 @@ struct Dataset {
     uint64_t avail;
     uint64_t refer;
     bool is_zsm;
+    bool skip_snap;
     size_t depth;
     std::map<std::string, std::string> props;
 };

@@ -64,14 +64,6 @@ void Create::exec(const Options &opts)
     m_dry_run = opts.get("dry_run");
     m_verbose = opts.get("verbose");
 
-    m_datasets.clear();
-    for (auto i : opts.ops()) {
-        find(i);
-    }
-
-    if (m_datasets.empty()) {
-        throw Exception("At least one dataset must be specified");
-    }
 
     //
     system_clock::time_point now = system_clock::now();
@@ -87,8 +79,19 @@ void Create::exec(const Options &opts)
             << "    suffix       : " << m_snap_suffix << "\n";
     }
 
-    for (auto i : m_datasets) {
-        snap(i);
+    //
+    m_datasets.clear();
+    for (auto &i : opts.ops()) {
+        find(i);
+    }
+
+    if (m_datasets.empty()) {
+        throw Exception("At least one dataset must be specified");
+    }
+
+
+    for (auto &i : m_datasets) {
+        snap(i.name);
     }
 
     if (m_verbose) {
@@ -107,7 +110,12 @@ void Create::find(const std::string &root)
         return;
     }
 
-    m_datasets.push_back(root);
+    Dataset ds(hzfs);
+    if (!ds.skip_snap) {
+        m_datasets.push_back(ds);
+    } else if (m_verbose) {
+        std::cout << "    skipping     : " << ds.name << "\n";
+    }
 
     if (m_recursive) {
         zfs_iter_filesystems(hzfs, iter_dataset, this);
@@ -164,7 +172,12 @@ int Create::iter_dataset(zfs_handle_t *hzfs, void *ptr)
 {
     Create *self = (Create*)ptr;
 
-    self->m_datasets.push_back(zfs_get_name(hzfs));
+    Dataset ds(hzfs);
+    if (!ds.skip_snap) {
+        self->m_datasets.push_back(ds);
+    } else if (self->m_verbose) {
+        std::cout << "    skipping     : " << ds.name << "\n";
+    }
 
     if (self->m_recursive) {
         zfs_iter_filesystems(hzfs, iter_dataset, self);

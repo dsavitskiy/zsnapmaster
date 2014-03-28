@@ -24,6 +24,7 @@
 #define ZSM_CREATE_H
 
 #include "zsm_command.h"
+#include "zsm_dataset.h"
 
 namespace zsm {
 
@@ -46,7 +47,7 @@ private:
     bool m_dry_run;
     bool m_verbose;
 
-    std::vector<std::string> m_datasets;
+    std::list<Dataset> m_datasets;
     std::string m_timestamp;
     std::string m_snap_suffix;
 };

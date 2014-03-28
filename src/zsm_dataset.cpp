@@ -26,14 +26,20 @@ namespace zsm {
 
 Dataset::Dataset(zfs_handle_t *hzfs) : Dataset()
 {
+    name = zfs_get_name(hzfs);
+    type = zfs_get_type(hzfs);
+
     tag = get_zfs_property<std::string>(hzfs, ZSM_TAG_PROP);
     if (!tag.empty()) {
         is_zsm = true;
     }
 
+    std::string skip_prop = get_zfs_property<std::string>(hzfs, ZSM_SKIP_PROP);
+    if (skip_prop == "on" && type != ZFS_TYPE_SNAPSHOT) {
+        skip_snap = true;
+    }
+
     timestamp = get_zfs_property<uint64_t>(hzfs, ZSM_TIMESTAMP_PROP);
-    name = zfs_get_name(hzfs);
-    type = zfs_get_type(hzfs);
 
     used = get_zfs_property<uint64_t>(hzfs, "used");
     avail = get_zfs_property<uint64_t>(hzfs, "avail");

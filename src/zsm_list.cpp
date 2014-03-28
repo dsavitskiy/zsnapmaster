@@ -135,6 +135,7 @@ void List::exec(const Options &opts)
     // TODO: add command line option to specify which properties to print.
     m_cols.push_back(Column("type", "TYPE"));
     m_cols.push_back(Column("name", "NAME"));
+    m_cols.push_back(Column("skip_snap", "SKIP"));
     m_cols.push_back(Column("snap_name", "SNAPSHOT NAME"));
     m_cols.push_back(Column("tag", "TAG"));
     m_cols.push_back(Column("timestamp", "TIME"));
@@ -202,6 +203,12 @@ void List::make_props(Dataset &d)
         d.props["used"] = nice_bytes(d.used);
         d.props["avail"] = nice_bytes(d.avail);
         d.props["refer"] = nice_bytes(d.refer);
+    }
+
+    if (d.type != ZFS_TYPE_SNAPSHOT && d.type != ZFS_TYPE_POOL) {
+        d.props["skip_snap"] = d.skip_snap ? "on" : "off";
+    } else {
+        d.props["skip_snap"] = "-";
     }
 
     if (d.type == ZFS_TYPE_POOL) {
